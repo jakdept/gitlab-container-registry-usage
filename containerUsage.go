@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -92,6 +93,36 @@ type Tag struct {
 	TotalSize int          `json:"total_size"`
 }
 
+// runRequest runs a request to the Gitlab API and returns the response body
+func (gitlab *gitlabEndpoint) runRequest(url, method string,
+	reqObj, respObj interface{}) (string, error) {
+	var reqBody bytes.Buffer
+	if reqObj != nil {
+		if err := json.NewEncoder(&reqBody).Encode(reqObj); err != nil {
+			return "", fmt.Errorf("could not encode body: %w", err)
+		}
+	}
+
+	req, err := http.NewRequest(method, url, &reqBody)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Add("Authorization", "Bearer "+gitlab.authtoken)
+
+	gitlab.rl.Take()
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if err := json.NewDecoder(resp.Body).Decode(&respObj); err != nil {
+		return "", err
+	}
+	return nextGitlabPage(resp.Header.Get("link")), nil
+}
+
 func (gitlab *gitlabEndpoint) ListGroups() (groups []Group, err error) {
 
 	next := gitlab.baseurl + "/api/v4/groups"
@@ -130,7 +161,7 @@ func (gitlab *gitlabEndpoint) ListGroups() (groups []Group, err error) {
 	return
 }
 
-func (gitlab *gitlabEndpoint) ListRepos(group Group) (repos []Repo, err error) {
+func (gitlab *gitlabEndpoint) ListRegistries(group Group) (repos []Repo, err error) {
 
 	next := fmt.Sprintf("%s/%s/%d/%s",
 		strings.TrimSuffix(gitlab.baseurl, "/"),
