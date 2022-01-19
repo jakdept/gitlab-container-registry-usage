@@ -1,42 +1,65 @@
 package main
 
-import (
-	"log"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+// var (
+// 	url    = kingpin.Flag("url", "target url").Required().String()
+// 	method = kingpin.Flag("method", "HTTP method").Default("GET").Enum("GET", "POST", "PUT", "DELETE").String()
+// 	sleep  = kingpin.Flag("sleep", "Sleep between requests").Default("100").Milliseconds()
 
-	"github.com/alecthomas/kingpin"
-)
+// 	followGitlabNext = kingpin.Flag("gitlab-next", "Follow the Gitlab 'next' header").Bool()
+// 	authToken        = kingpin.Flag("gitlab-token", "Gitlab API token").Envar("GITLAB_API_TOKEN").Default("").String()
+// )
 
-var (
-	url    = kingpin.Flag("url", "target url").Required().String()
-	method = kingpin.Flag("method", "HTTP method").Default("GET").Enum("GET", "POST", "PUT", "DELETE").String()
+// func runRequest(method, url, body string) {
+// 	time.Sleep(time.Microsecond * 100)
+// 	req, err := http.NewRequest(method, url, strings.NewReader(body))
+// 	if err != nil {
+// 		log.Fatalf("failed to create request - %w", err)
+// 	}
 
-	followGitlabNext = kingpin.Flag("gitlab-next", "Follow the Gitlab 'next' header").Bool()
-	authToken        = kingpin.Flag("gitlab-token", "Gitlab API token").Envar("GITLAB_API_TOKEN").Default("").String()
-)
+// 	if authToken != nil && *authToken != "" {
+// 		req.Header.Set("Authorization", "Bearer "+*authToken)
+// 	}
+// 	resp, err := http.DefaultClient.Do(req)
+// 	if err != nil {
+// 		log.Fatalf("request failed - %w", err)
+// 	}
+// 	if resp.StatusCode != 200 {
+// 		log.Fatalf("bad response - %w", err)
+// 	}
+// 	if err = resp.Write(os.Stdout); err != nil {
+// 		log.Fatalf("cannot write body - %w", err)
+// 	}
 
-func nextGitlabPage(header string) string {
-	for _, link := range strings.Split(header, ",") {
-		parts := strings.Split(link, ";")
-		if len(parts) == 2 && strings.TrimSpace(parts[1]) == "rel=\"next\"" {
-			return strings.Trim(strings.TrimSpace(parts[0]), " <>")
-		}
-	}
-	return ""
-}
-func main() {
-	time.Sleep(time.Microsecond * 100)
-	req, err := http.NewRequest(*method, *url, os.Stdin)
-	if err != nil {
-		log.Fatalf("failed to create request - %w", err)
-	}
+// 	next := nextGitlabPage(resp.Header.Get("link"))
+// 	if next != nil {
 
-	if authToken != nil && *authToken != "" {
-		req.Header.Set("Authorization", "Bearer "+*authToken)
-	}
+// 	}
 
-	http.DefaultClient.Do(req)
-}
+// }
+
+// func main() {
+// 	time.Sleep(time.Microsecond * 100)
+// 	req, err := http.NewRequest(*method, *url, os.Stdin)
+// 	if err != nil {
+// 		log.Fatalf("failed to create request - %w", err)
+// 	}
+
+// 	if authToken != nil && *authToken != "" {
+// 		req.Header.Set("Authorization", "Bearer "+*authToken)
+// 	}
+// 	resp, err := http.DefaultClient.Do(req)
+// 	if err != nil {
+// 		log.Fatalf("request failed - %w", err)
+// 	}
+// 	if resp.StatusCode != 200 {
+// 		log.Fatalf("bad response - %w", err)
+// 	}
+// 	if err = resp.Write(os.Stdout); err != nil {
+// 		log.Fatalf("cannot write body - %w", err)
+// 	}
+
+// 	next := nextGitlabPage(resp.Header.Get("link"))
+// 	if next != nil {
+
+// 	}
+// }

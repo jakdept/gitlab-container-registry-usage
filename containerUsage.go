@@ -10,6 +10,16 @@ import (
 
 // curl --header "Authorization: Bearer $GITLAB_API_TOKEN" https://git.liquidweb.com/api/v4/groups|jq|bat
 
+func nextGitlabPage(header string) string {
+	for _, link := range strings.Split(header, ",") {
+		parts := strings.Split(link, ";")
+		if len(parts) == 2 && strings.TrimSpace(parts[1]) == "rel=\"next\"" {
+			return strings.Trim(strings.TrimSpace(parts[0]), " <>")
+		}
+	}
+	return ""
+}
+
 type gitlabEndpoint struct {
 	baseurl   string
 	authtoken string
