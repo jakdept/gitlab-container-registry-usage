@@ -1,14 +1,5 @@
 package main
 
-// var (
-// 	url    = kingpin.Flag("url", "target url").Required().String()
-// 	method = kingpin.Flag("method", "HTTP method").Default("GET").Enum("GET", "POST", "PUT", "DELETE").String()
-// 	sleep  = kingpin.Flag("sleep", "Sleep between requests").Default("100").Milliseconds()
-
-// 	followGitlabNext = kingpin.Flag("gitlab-next", "Follow the Gitlab 'next' header").Bool()
-// 	authToken        = kingpin.Flag("gitlab-token", "Gitlab API token").Envar("GITLAB_API_TOKEN").Default("").String()
-// )
-
 // func runRequest(method, url, body string) {
 // 	time.Sleep(time.Microsecond * 100)
 // 	req, err := http.NewRequest(method, url, strings.NewReader(body))
