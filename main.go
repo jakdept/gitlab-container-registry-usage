@@ -6,6 +6,8 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/davecgh/go-spew/spew"
+
+	"github.com/jakdept/gitlab-container-registry-usage/lib/gitlab"
 )
 
 // curl --header "Authorization: Bearer $GITLAB_API_TOKEN" https://git.liquidweb.com/api/v4/groups|jq|bat
@@ -21,7 +23,7 @@ func main() {
 	ctx, shutdown := context.WithCancel(context.Background())
 	defer shutdown()
 
-	gitlab := NewGitlabEndpoint(*url, *authToken, *freq)
+	gitlab := gitlab.NewGitlabEndpoint(*url, *authToken, *freq)
 	groups, err := gitlab.ListGroups(ctx)
 	if err != nil {
 		log.Fatalln(err)
