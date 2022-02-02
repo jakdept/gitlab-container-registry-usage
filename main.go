@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/fatih/color"
 
 	"github.com/jakdept/gitlab-container-registry-usage/lib/gitlab"
 )
@@ -25,11 +25,32 @@ func main() {
 	ctx, shutdown := context.WithCancel(context.Background())
 	defer shutdown()
 
-	gitlab := gitlab.NewGitlabEndpoint(*url, *authToken, *freq)
-	groups, err := gitlab.ListGroups(ctx)
+	endpoint := gitlab.NewGitlabEndpoint(*url, *authToken, *freq)
+	groups, err := endpoint.ListGroups(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	spew.Dump(groups)
 
+	// color.Blue(spew.Sdump(groups))
+	var groupTotal, registryTotal int
+
+	for _, group := range groups {
+		groupTotal = 0
+		color.Cyan("Group: %s ID: %d", group.Path, group.ID)
+		regs, err := endpoint.ListRegistriesInGroup(ctx, group)
+		// color.Blue(spew.Sdump(regs))
+		if err != nil {
+			log.Fatalln(err)
+		}
+		for _, reg := range regs {
+			registryTotal = 0
+			// color.Yellow("Registry: %s", reg.Path)
+			for _, tag := range reg.Tags {
+				registryTotal += tag.TotalSize
+				color.Green("Tag: %s Size: %d", tag.Path, tag.TotalSize)
+			}
+			color.Yellow("Total Size for [%s]: %d", reg.Path, registryTotal)
+		}
+		color.Cyan("Total Size for [%s]: %d", group.Path, groupTotal)
+	}
 }
