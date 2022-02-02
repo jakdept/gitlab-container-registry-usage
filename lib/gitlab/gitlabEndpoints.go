@@ -29,7 +29,7 @@ func (t *jsonDateTime) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", t.Format(time.RFC3339Nano))), nil
 }
 
-func nextGitlabPage(header string) string {
+func (g *endpoint) nextGitlabPage(header string) string {
 	for _, link := range strings.Split(header, ",") {
 		parts := strings.Split(link, ";")
 		if len(parts) == 2 && strings.TrimSpace(parts[1]) == "rel=\"next\"" {
@@ -37,6 +37,10 @@ func nextGitlabPage(header string) string {
 		}
 	}
 	return ""
+}
+
+func (g *endpoint) fmtEndpointURL(format string, args ...interface{}) string {
+	return path.Join(g.baseurl, fmt.Sprintf(format, args...))
 }
 
 type endpoint struct {
@@ -50,12 +54,8 @@ func NewGitlabEndpoint(baseurl, authtoken string, reqPerSec float64) *endpoint {
 		reqPerSec = 100
 	}
 
-	baseurl = strings.TrimSuffix(baseurl, "/")
-	baseurl = strings.TrimSuffix(baseurl, "api/v4")
-	baseurl = strings.TrimSuffix(baseurl, "/")
-
 	return &endpoint{
-		baseurl:   strings.TrimRight(baseurl, "/") + "/api/v4",
+		baseurl:   path.Join(baseurl, "/api/v4/"),
 		authtoken: authtoken,
 		rl:        rate.NewLimiter(rate.Limit(reqPerSec), 1),
 	}
@@ -125,14 +125,14 @@ func (gitlab *endpoint) runRequest(ctx context.Context, url, method string,
 	if err := json.NewDecoder(&buf).Decode(&respObj); err != nil {
 		return "", fmt.Errorf("could not decode body into json: %w\n%s", err, buf.String())
 	}
-	return nextGitlabPage(resp.Header.Get("link")), nil
+	return gitlab.nextGitlabPage(resp.Header.Get("link")), nil
 }
 
 // ListGroups lists all groups in a Gitlab install.
 //
 // Gitlab docs: https://docs.gitlab.com/ee/api/groups.html#list-groups
 func (gitlab *endpoint) ListGroups(ctx context.Context) (groups []Group, err error) {
-	next := gitlab.baseurl + "/groups"
+	next := gitlab.fmtEndpointURL("/groups")
 	var newGroups []Group
 
 	for next != "" {
@@ -143,7 +143,6 @@ func (gitlab *endpoint) ListGroups(ctx context.Context) (groups []Group, err err
 		}
 		groups = append(groups, newGroups...)
 	}
-
 	return
 }
 
@@ -151,11 +150,10 @@ func (gitlab *endpoint) ListGroups(ctx context.Context) (groups []Group, err err
 //
 // Gitlab docs: https://docs.gitlab.com/ee/api/container_registry.html#within-a-group
 func (gitlab *endpoint) ListRegistriesInGroup(ctx context.Context, group Group,
-) (imgRepos []ContainerRepository, err error) {
+) (imgRepos []Project, err error) {
 
-	next := fmt.Sprintf("%s/%s/%d/%s",
-		gitlab.baseurl, "groups", group.ID, "registry/repositories?tags=1")
-	var newImgRepos []ContainerRepository
+	next := gitlab.fmtEndpointURL("%s/%d/%s", "groups", group.ID, "registry/repositories?tags=1")
+	var newImgRepos []Project
 
 	for next != "" {
 		next, err = gitlab.runRequest(ctx, next, "GET", nil, &newImgRepos)
