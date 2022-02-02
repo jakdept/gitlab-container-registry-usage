@@ -20,6 +20,8 @@ var (
 )
 
 func main() {
+	kingpin.Parse()
+
 	ctx, shutdown := context.WithCancel(context.Background())
 	defer shutdown()
 

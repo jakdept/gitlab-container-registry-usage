@@ -50,8 +50,9 @@ func NewGitlabEndpoint(baseurl, authtoken string, reqPerSec float64) *endpoint {
 		reqPerSec = 100
 	}
 
-	baseurl = strings.TrimRight(baseurl, "/")
-	baseurl = strings.TrimRight(baseurl, "/api/v4") + "/api/v4"
+	baseurl = strings.TrimSuffix(baseurl, "/")
+	baseurl = strings.TrimSuffix(baseurl, "api/v4")
+	baseurl = strings.TrimSuffix(baseurl, "/")
 
 	return &endpoint{
 		baseurl:   strings.TrimRight(baseurl, "/") + "/api/v4",
@@ -112,14 +113,23 @@ func (gitlab *endpoint) runRequest(ctx context.Context, url, method string,
 	}
 	defer resp.Body.Close()
 
-	if err := json.NewDecoder(resp.Body).Decode(&respObj); err != nil {
-		return "", err
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed: %s\nreq %s %s", resp.Status, method, url)
+	}
+
+	buf := bytes.Buffer{}
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		return "", fmt.Errorf("could not read body: %w", err)
+	}
+
+	if err := json.NewDecoder(&buf).Decode(&respObj); err != nil {
+		return "", fmt.Errorf("could not decode body into json: %w\n%s", err, buf.String())
 	}
 	return nextGitlabPage(resp.Header.Get("link")), nil
 }
 
 func (gitlab *endpoint) ListGroups(ctx context.Context) (groups []Group, err error) {
-	next := gitlab.baseurl + "/api/v4/groups"
+	next := gitlab.baseurl + "/groups"
 	var newGroups []Group
 
 	for next != "" {
