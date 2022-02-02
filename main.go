@@ -36,7 +36,6 @@ func main() {
 
 	for _, group := range groups {
 		groupTotal = 0
-		color.Cyan("Group: %s ID: %d", group.Path, group.ID)
 		regs, err := endpoint.ListRegistriesInGroup(ctx, group)
 		// color.Blue(spew.Sdump(regs))
 		if err != nil {
@@ -46,11 +45,15 @@ func main() {
 			registryTotal = 0
 			// color.Yellow("Registry: %s", reg.Path)
 			for _, tag := range reg.Tags {
+				if err := endpoint.GetRegistryTagInfo(ctx, reg, &tag); err != nil {
+					log.Fatalln(err)
+				}
+				color.Green("\t\tTag: %s Size: %d", tag.Path, tag.TotalSize)
 				registryTotal += tag.TotalSize
-				color.Green("Tag: %s Size: %d", tag.Path, tag.TotalSize)
 			}
-			color.Yellow("Total Size for [%s]: %d", reg.Path, registryTotal)
+			color.Cyan("\tProject [%s] Usage: %d", reg.Path, registryTotal)
+			groupTotal += registryTotal
 		}
-		color.Cyan("Total Size for [%s]: %d", group.Path, groupTotal)
+		color.Yellow("Group [%s] total: %d", group.Path, groupTotal)
 	}
 }

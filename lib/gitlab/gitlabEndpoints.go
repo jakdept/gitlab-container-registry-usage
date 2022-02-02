@@ -40,7 +40,7 @@ func (g *endpoint) nextGitlabPage(header string) string {
 }
 
 func (g *endpoint) fmtEndpointURL(format string, args ...interface{}) string {
-	return path.Join(g.baseurl, fmt.Sprintf(format, args...))
+	return g.baseurl + strings.TrimPrefix(fmt.Sprintf(format, args...), "/")
 }
 
 type endpoint struct {
@@ -55,7 +55,7 @@ func NewGitlabEndpoint(baseurl, authtoken string, reqPerSec float64) *endpoint {
 	}
 
 	return &endpoint{
-		baseurl:   path.Join(baseurl, "/api/v4/"),
+		baseurl:   strings.TrimSuffix(baseurl, "/") + "/api/v4/",
 		authtoken: authtoken,
 		rl:        rate.NewLimiter(rate.Limit(reqPerSec), 1),
 	}
@@ -68,7 +68,7 @@ type Group struct {
 	Visibility string `json:"visibility"`
 }
 
-type ContainerRepository struct {
+type ContainerRegistry struct {
 	ID                     int64  `json:"id"`
 	Name                   string `json:"name"`
 	Path                   string `json:"path"`
@@ -84,6 +84,7 @@ type Tag struct {
 	Name      string       `json:"name"`
 	Path      string       `json:"path"`
 	Location  string       `json:"location"`
+	Revision  string       `json:"revision"`
 	CreatedAt jsonDateTime `json:"created_at"`
 	TotalSize int          `json:"total_size"`
 }
@@ -150,10 +151,10 @@ func (gitlab *endpoint) ListGroups(ctx context.Context) (groups []Group, err err
 //
 // Gitlab docs: https://docs.gitlab.com/ee/api/container_registry.html#within-a-group
 func (gitlab *endpoint) ListRegistriesInGroup(ctx context.Context, group Group,
-) (imgRepos []Project, err error) {
+) (imgRepos []ContainerRegistry, err error) {
 
 	next := gitlab.fmtEndpointURL("%s/%d/%s", "groups", group.ID, "registry/repositories?tags=1")
-	var newImgRepos []Project
+	var newImgRepos []ContainerRegistry
 
 	for next != "" {
 		next, err = gitlab.runRequest(ctx, next, "GET", nil, &newImgRepos)
@@ -166,7 +167,16 @@ func (gitlab *endpoint) ListRegistriesInGroup(ctx context.Context, group Group,
 	return
 }
 
-func (gitlab *endpoint) GetRegistryInfo(registry Tag) (err error) {
+// GetRegistryTagInfo gets more specific information about a tag in a registry.
+// https://docs.gitlab.com/ee/api/container_registry.html#get-details-of-a-registry-repository-tag
+func (gitlab *endpoint) GetRegistryTagInfo(ctx context.Context, registry ContainerRegistry, tag *Tag) (err error) {
 
+	next := gitlab.fmtEndpointURL("/projects/%d/registry/repositories/%d/tags/%s",
+		registry.ProjectID, registry.ID, tag.Name)
+
+	_, err = gitlab.runRequest(ctx, next, "GET", nil, tag)
+	if err != nil {
+		return fmt.Errorf("error getting tag details for container repository %s:  %w", tag.Path, err)
+	}
 	return nil
 }
