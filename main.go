@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/dustin/go-humanize"
 	"github.com/fatih/color"
 
 	"github.com/jakdept/gitlab-container-registry-usage/lib/gitlab"
@@ -54,6 +55,6 @@ func main() {
 			color.Cyan("\tProject [%s] Usage: %d", reg.Path, registryTotal)
 			groupTotal += registryTotal
 		}
-		color.Yellow("Group [%s] total: %d", group.Path, groupTotal)
+		color.Yellow("Group [%s] total: %s", group.Path, humanize.Bytes(uint64(groupTotal)))
 	}
 }
