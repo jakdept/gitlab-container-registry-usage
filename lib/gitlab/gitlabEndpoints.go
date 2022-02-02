@@ -68,7 +68,7 @@ type Group struct {
 	Visibility string `json:"visibility"`
 }
 
-type Repo struct {
+type ContainerRepository struct {
 	ID                     int64  `json:"id"`
 	Name                   string `json:"name"`
 	Path                   string `json:"path"`
@@ -128,6 +128,9 @@ func (gitlab *endpoint) runRequest(ctx context.Context, url, method string,
 	return nextGitlabPage(resp.Header.Get("link")), nil
 }
 
+// ListGroups lists all groups in a Gitlab install.
+//
+// Gitlab docs: https://docs.gitlab.com/ee/api/groups.html#list-groups
 func (gitlab *endpoint) ListGroups(ctx context.Context) (groups []Group, err error) {
 	next := gitlab.baseurl + "/groups"
 	var newGroups []Group
@@ -144,12 +147,15 @@ func (gitlab *endpoint) ListGroups(ctx context.Context) (groups []Group, err err
 	return
 }
 
-func (gitlab *endpoint) ListRegistries(ctx context.Context, group Group,
-) (repos []Repo, err error) {
+// ListRegistriesInGroup lists all container registries in a gitlab group.
+//
+// Gitlab docs: https://docs.gitlab.com/ee/api/container_registry.html#within-a-group
+func (gitlab *endpoint) ListRegistriesInGroup(ctx context.Context, group Group,
+) (repos []ContainerRepository, err error) {
 
 	next := fmt.Sprintf("%s/%s/%d/%s",
 		gitlab.baseurl, "groups", group.ID, "registry/repositories?tags=1")
-	var newRepos []Repo
+	var newRepos []ContainerRepository
 
 	for next != "" {
 		next, err = gitlab.runRequest(ctx, next, "GET", nil, &newRepos)
