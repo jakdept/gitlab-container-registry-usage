@@ -68,7 +68,8 @@ func main() {
 				color.Green("\t\tTag: %s Size: %d ts: %d", tag.Path, tag.TotalSize, tag.CreatedAt.Unix())
 				registryTotal += tag.TotalSize
 			}
-			color.Cyan("\tProject [%s] Usage: %d", reg.Path, registryTotal)
+			color.Cyan("\tProject/Registry [%d/%d] %s Usage: %d",
+				reg.ProjectID, reg.ID, reg.Path, registryTotal)
 			groupTotal += registryTotal
 		}
 		color.Yellow("Group [%s] total: %d", group.Path, groupTotal)
