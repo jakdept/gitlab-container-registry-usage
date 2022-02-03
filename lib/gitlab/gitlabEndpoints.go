@@ -86,7 +86,7 @@ type Tag struct {
 	Location  string       `json:"location"`
 	Revision  string       `json:"revision"`
 	CreatedAt jsonDateTime `json:"created_at"`
-	TotalSize int          `json:"total_size"`
+	TotalSize uint64       `json:"total_size"`
 }
 
 // runRequest runs a request to the Gitlab API and returns the response body
